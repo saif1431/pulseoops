@@ -54,8 +54,8 @@ export function Sidebar({ className, user }: SidebarProps) {
   return (
     <div className={cn("flex h-full w-[280px] flex-col bg-bg-base border-r border-line-default/50", className)}>
       <div className="flex h-24 items-center px-8 shrink-0">
-        <Link href="/dashboard" className="flex items-center gap-4 font-bold text-2xl text-text-primary group">
-          <Image src="/logo-transparent.png" alt="PulseOps Logo" width={196} height={54} className="h-12 w-auto" priority />
+        <Link href="/" className="flex items-center gap-4 font-bold text-2xl text-text-primary group">
+          <Image src="/logo-transparent.png" alt="PulseOps Logo" width={196} height={54} className="h-20 w-auto" priority />
         </Link>
       </div>
 

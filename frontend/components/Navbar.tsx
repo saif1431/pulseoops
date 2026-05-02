@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -14,6 +15,7 @@ const navLinks = [
 ];
 
 export default function Navbar() {
+  const { status } = useSession();
   const [scrolled,    setScrolled]    = useState(false);
   const [mobileOpen,  setMobileOpen]  = useState(false);
   const [mounted,     setMounted]     = useState(false);
@@ -33,8 +35,8 @@ export default function Navbar() {
   const headerCls = cn(
     "fixed inset-x-0 top-0 z-50 transition-all duration-300",
     mounted && scrolled
-      ? "bg-bg-base/80 backdrop-blur-md border-b border-line-default/50 shadow-sm"
-      : "bg-transparent"
+      ? "bg-white border-b border-line-default/50 "
+      : "bg-white"
   );
 
   return (
@@ -54,9 +56,9 @@ export default function Navbar() {
                 src="/logo-transparent.png"
                 alt="PulseOps"
                 width={260}
-                height={72}
+                height={76}
                 priority
-                className="h-16 w-auto object-contain"
+                className="h-20 w-auto object-contain"
               />
             </Link>
 
@@ -75,18 +77,29 @@ export default function Navbar() {
 
             {/* CTA buttons */}
             <div className="hidden md:flex items-center gap-3 shrink-0">
-              <Link
-                href="/login"
-                className="px-5 py-2 text-sm font-bold text-text-primary rounded-xl hover:bg-bg-subtle transition-all"
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/register"
-                className="px-6 py-2.5 text-sm font-bold text-white rounded-xl bg-brand-default shadow-[0_4px_12px_rgba(216,180,254,0.4)] hover:shadow-[0_6px_16px_rgba(216,180,254,0.6)] hover:-translate-y-0.5 transition-all"
-              >
-                Start free &rarr;
-              </Link>
+              {status === "authenticated" ? (
+                <Link
+                  href="/dashboard"
+                  className="px-6 py-2.5 text-sm font-bold text-white rounded-xl bg-brand-default shadow-[0_4px_12px_rgba(216,180,254,0.4)] hover:shadow-[0_6px_16px_rgba(216,180,254,0.6)] hover:-translate-y-0.5 transition-all"
+                >
+                  Dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="px-5 py-2 text-sm font-bold text-text-primary rounded-xl hover:bg-bg-subtle transition-all"
+                  >
+                    Sign in
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="px-6 py-2.5 text-sm font-bold text-white rounded-xl bg-brand-default shadow-[0_4px_12px_rgba(216,180,254,0.4)] hover:shadow-[0_6px_16px_rgba(216,180,254,0.6)] hover:-translate-y-0.5 transition-all"
+                  >
+                    Start free &rarr;
+                  </Link>
+                </>
+              )}
             </div>
 
             {/* Mobile burger */}
@@ -139,23 +152,37 @@ export default function Navbar() {
           ))}
 
           <div className="flex flex-col gap-2 mt-3 pt-4 border-t border-gray-100">
-            <Link
-              href="/login"
-              className="flex items-center justify-center py-2.5 text-sm font-medium
-                         text-gray-700 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-              onClick={() => setMobileOpen(false)}
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/register"
-              className="flex items-center justify-center py-2.5 text-sm font-semibold text-white
-                         rounded-lg bg-linear-to-r from-blue-500 to-teal-400
-                         shadow-[0_2px_12px_rgba(59,130,246,0.3)] transition-all"
-              onClick={() => setMobileOpen(false)}
-            >
-              Get started →
-            </Link>
+            {status === "authenticated" ? (
+              <Link
+                href="/dashboard"
+                className="flex items-center justify-center py-2.5 text-sm font-semibold text-white
+                           rounded-lg bg-linear-to-r from-blue-500 to-teal-400
+                           shadow-[0_2px_12px_rgba(59,130,246,0.3)] transition-all"
+                onClick={() => setMobileOpen(false)}
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="flex items-center justify-center py-2.5 text-sm font-medium
+                             text-gray-700 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/register"
+                  className="flex items-center justify-center py-2.5 text-sm font-semibold text-white
+                             rounded-lg bg-linear-to-r from-blue-500 to-teal-400
+                             shadow-[0_2px_12px_rgba(59,130,246,0.3)] transition-all"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Get started
+                </Link>
+              </>
+            )}
           </div>
         </nav>
       </div>

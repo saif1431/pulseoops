@@ -4,12 +4,14 @@ import * as React from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Menu } from "lucide-react"
+import { useSession } from "next-auth/react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 
 export function MarketingHeader() {
+  const { status } = useSession()
   const [scrolled, setScrolled] = React.useState(false)
 
   React.useEffect(() => {
@@ -55,12 +57,20 @@ export function MarketingHeader() {
       </nav>
 
       <div className="hidden md:flex items-center justify-end gap-6 flex-1">
-        <Link href="/login" className="text-sm font-medium text-text-primary hover:text-brand-primary transition-colors">
-          Login
-        </Link>
-        <Link href="/register">
-          <Button className="btn-primary h-10 px-6 text-sm">Get Started</Button>
-        </Link>
+        {status === "authenticated" ? (
+          <Link href="/dashboard">
+            <Button className="btn-primary h-10 px-6 text-sm">Dashboard</Button>
+          </Link>
+        ) : (
+          <>
+            <Link href="/login" className="text-sm font-medium text-text-primary hover:text-brand-primary transition-colors">
+              Login
+            </Link>
+            <Link href="/register">
+              <Button className="btn-primary h-10 px-6 text-sm">Get Started</Button>
+            </Link>
+          </>
+        )}
       </div>
 
       <div className="md:hidden">
@@ -78,10 +88,18 @@ export function MarketingHeader() {
               <Link href="/docs" className="text-lg font-semibold">Docs</Link>
               <Link href="/blog" className="text-lg font-semibold">Blog</Link>
               <hr />
-              <Link href="/login" className="text-base font-medium">Login</Link>
-              <Link href="/register">
-                <Button className="btn-primary h-12 w-full text-base">Get Started</Button>
-              </Link>
+              {status === "authenticated" ? (
+                <Link href="/dashboard">
+                  <Button className="btn-primary h-12 w-full text-base">Dashboard</Button>
+                </Link>
+              ) : (
+                <>
+                  <Link href="/login" className="text-base font-medium">Login</Link>
+                  <Link href="/register">
+                    <Button className="btn-primary h-12 w-full text-base">Get Started</Button>
+                  </Link>
+                </>
+              )}
             </div>
           </SheetContent>
         </Sheet>
