@@ -1,0 +1,18 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
+export function StatusRefresh({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      router.refresh();
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [router]);
+
+  return <>{children}</>;
+}
