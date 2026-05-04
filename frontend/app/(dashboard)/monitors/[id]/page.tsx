@@ -1,8 +1,7 @@
 import * as React from "react"
-import { getMonitor, getMonitorStats } from "@/lib/api/monitors"
+import { getMonitor, type Monitor } from "@/lib/api/monitors"
 import { getIncidents } from "@/lib/api/incidents"
 import { MonitorDetailClient } from "@/components/monitors/monitor-detail-client"
-import { Monitor } from "@/lib/types"
 
 export default async function MonitorDetailPage({ params }: { params: { id: string } }) {
   const resolvedParams = await params;
@@ -12,20 +11,24 @@ export default async function MonitorDetailPage({ params }: { params: { id: stri
     id: id,
     name: "Marketing Website",
     url: "https://example.com",
-    status: "up",
-    uptime: "99.98%",
-    lastChecked: "1 minute ago",
-    responseTime: "145ms"
+    interval_seconds: 300,
+    expected_status_code: 200,
+    last_status: "up",
+    last_response_ms: 145,
+    last_checked_at: new Date().toISOString(),
+    is_active: true,
+    show_on_status_page: true,
+    uptime_percentage: 99.98,
+    created_at: new Date().toISOString(),
   }
 
-  const [monitor, incidents, stats] = await Promise.all([
+  const [monitor, incidents] = await Promise.all([
     getMonitor(id).catch(() => mockMonitor),
     getIncidents().catch(() => []),
-    getMonitorStats(id).catch(() => ({}))
   ])
 
   // Filter incidents just for this monitor if real data exists
   const monitorIncidents = incidents.filter(i => i.monitorId === id)
 
-  return <MonitorDetailClient monitor={monitor} incidents={monitorIncidents} stats={stats} />
+  return <MonitorDetailClient monitor={monitor} incidents={monitorIncidents} stats={{}} />
 }

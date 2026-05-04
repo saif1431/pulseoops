@@ -14,8 +14,34 @@ export default async function StatusPageEditPage({ params }: { params: { id: str
       slug: "pulseops-core" 
     })),
     getMonitors().catch(() => [
-      { id: "1", name: "Marketing Website", url: "https://example.com", status: "up" as const, uptime: "100%", lastChecked: "1 min ago", responseTime: "120ms" },
-      { id: "2", name: "API Gateway", url: "api.example.com", status: "up" as const, uptime: "99.95%", lastChecked: "1 min ago", responseTime: "340ms" },
+      {
+        id: "1",
+        name: "Marketing Website",
+        url: "https://example.com",
+        interval_seconds: 300,
+        expected_status_code: 200,
+        last_status: "up" as const,
+        last_response_ms: 120,
+        last_checked_at: new Date().toISOString(),
+        is_active: true,
+        show_on_status_page: true,
+        uptime_percentage: 100,
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: "2",
+        name: "API Gateway",
+        url: "https://api.example.com",
+        interval_seconds: 300,
+        expected_status_code: 200,
+        last_status: "up" as const,
+        last_response_ms: 340,
+        last_checked_at: new Date().toISOString(),
+        is_active: true,
+        show_on_status_page: true,
+        uptime_percentage: 99.95,
+        created_at: new Date().toISOString(),
+      },
     ])
   ])
 

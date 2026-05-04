@@ -5,7 +5,7 @@ const API_URL =
 
 async function getToken(): Promise<string | null> {
   const session = await auth()
-  return (session as any)?.accessToken ?? null
+  return (session as { accessToken?: string } | null)?.accessToken ?? null
 }
 
 export async function apiGet<T>(path: string, tags?: string[]): Promise<T> {
@@ -70,6 +70,9 @@ export async function apiDelete<T>(path: string): Promise<T> {
   if (!res.ok) {
     const error = await res.json().catch(() => ({ detail: "Request failed" }))
     throw new Error(error.detail || `HTTP ${res.status}`)
+  }
+  if (res.status === 204) {
+    return undefined as T
   }
   return res.json()
 }

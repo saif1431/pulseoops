@@ -5,13 +5,14 @@ import { Activity, Clock, AlertTriangle, ArrowRight, CheckCircle } from "lucide-
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { StatusDot } from "@/components/ui/status-dot"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
-import { Badge, StatusBadge } from "@/components/ui/badge"
+import { StatusBadge } from "@/components/ui/badge"
 import { AddMonitorModal } from "@/components/monitors/add-monitor-modal"
 import { getMonitors } from "@/lib/api/monitors"
 import { getIncidents } from "@/lib/api/incidents"
 import { AnimatedStatValue } from "@/components/dashboard/animated-stat"
 import { CheckoutSuccessFeedback } from "@/components/dashboard/checkout-success-feedback"
 import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist"
+import { createMonitorAction } from "../monitors/actions"
 
 export default async function DashboardHomePage() {
   const [monitors, incidents] = await Promise.all([
@@ -19,15 +20,15 @@ export default async function DashboardHomePage() {
     getIncidents().catch(() => [])
   ])
 
-  const activeMonitors = monitors.filter(m => m.status === 'up' || m.status === 'degraded').length
+  const activeMonitors = monitors.filter((m) => m.is_active).length
   const activeIncidents = incidents.filter(i => i.status !== 'resolved').length
   
   const totalUptime = monitors.length > 0 
-    ? monitors.reduce((acc, m) => acc + parseFloat(m.uptime || "0"), 0) / monitors.length 
+    ? monitors.reduce((acc, m) => acc + (m.uptime_percentage ?? 0), 0) / monitors.length
     : 100
     
   const avgResponseTime = monitors.length > 0
-    ? Math.round(monitors.reduce((acc, m) => acc + parseInt(m.responseTime || "0", 10), 0) / monitors.length)
+    ? Math.round(monitors.reduce((acc, m) => acc + (m.last_response_ms ?? 0), 0) / monitors.length)
     : 0
 
   const stats = [
@@ -53,7 +54,7 @@ export default async function DashboardHomePage() {
           <h1 className="text-2xl font-bold text-text-primary">Overview</h1>
           <p className="text-sm text-text-secondary">A summary of your monitoring infrastructure.</p>
         </div>
-        <AddMonitorModal currentCount={monitors.length} />
+        <AddMonitorModal currentCount={monitors.length} createAction={createMonitorAction} />
       </div>
 
       <div className="grid gap-6 grid-cols-2 lg:grid-cols-4">
@@ -110,14 +111,18 @@ export default async function DashboardHomePage() {
                     recentMonitors.map((monitor) => (
                       <TableRow key={monitor.id} className="hover:bg-bg-base transition-colors border-b border-line-default/20 last:border-0 group">
                         <TableCell className="w-16 px-7 text-center">
-                          <StatusDot status={monitor.status} />
+                          <StatusDot status={monitor.last_status} />
                         </TableCell>
                         <TableCell className="py-4">
                           <div className="font-bold text-text-primary text-sm group-hover:text-brand-default transition-colors">{monitor.name}</div>
                           <div className="text-[11px] text-text-tertiary truncate max-w-[120px] sm:max-w-xs font-mono mt-0.5">{monitor.url}</div>
                         </TableCell>
-                        <TableCell className="text-right font-mono text-sm font-bold text-text-primary">{monitor.uptime || "N/A"}</TableCell>
-                        <TableCell className="text-right px-7 font-mono text-sm text-text-tertiary">{monitor.responseTime || "N/A"}</TableCell>
+                        <TableCell className="text-right font-mono text-sm font-bold text-text-primary">
+                          {monitor.uptime_percentage != null ? `${monitor.uptime_percentage.toFixed(2)}%` : "N/A"}
+                        </TableCell>
+                        <TableCell className="text-right px-7 font-mono text-sm text-text-tertiary">
+                          {monitor.last_response_ms != null ? `${monitor.last_response_ms}ms` : "N/A"}
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : (

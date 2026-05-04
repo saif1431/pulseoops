@@ -1,30 +1,40 @@
-import { apiGet, apiPost, apiPatch, apiDelete } from "../api-client";
-import { Monitor } from "../types";
+import { apiDelete, apiGet, apiPatch, apiPost } from "../api-client";
 
-export async function getMonitors(): Promise<Monitor[]> {
-  return apiGet<Monitor[]>("/api/monitors", ["monitors"]);
+export interface Monitor {
+  id: string;
+  name: string;
+  url: string;
+  interval_seconds: number;
+  expected_status_code: number;
+  last_status: "up" | "down" | "degraded" | "pending";
+  last_response_ms: number | null;
+  last_checked_at: string | null;
+  is_active: boolean;
+  show_on_status_page: boolean;
+  uptime_percentage: number | null;
+  created_at: string;
 }
 
-export async function getMonitor(id: string): Promise<Monitor> {
-  return apiGet<Monitor>(`/api/monitors/${id}`);
+export interface CreateMonitorInput {
+  name: string;
+  url: string;
+  interval_seconds?: number;
+  expected_status_code?: number;
+  show_on_status_page?: boolean;
 }
 
-export async function createMonitor(data: Partial<Monitor>): Promise<Monitor> {
-  return apiPost<Monitor>("/api/monitors", data);
+export interface UpdateMonitorInput {
+  name?: string;
+  url?: string;
+  interval_seconds?: number;
+  expected_status_code?: number;
+  show_on_status_page?: boolean;
 }
 
-export async function updateMonitor(id: string, data: Partial<Monitor>): Promise<Monitor> {
-  return apiPatch<Monitor>(`/api/monitors/${id}`, data);
-}
-
-export async function deleteMonitor(id: string): Promise<void> {
-  return apiDelete<void>(`/api/monitors/${id}`);
-}
-
-export async function pauseMonitor(id: string): Promise<Monitor> {
-  return apiPatch<Monitor>(`/api/monitors/${id}/pause`);
-}
-
-export async function getMonitorStats(id: string): Promise<unknown> {
-  return apiGet<unknown>(`/api/monitors/${id}/stats`);
-}
+export const getMonitors = () => apiGet<Monitor[]>("/api/monitors/");
+export const getMonitor = (id: string) => apiGet<Monitor>(`/api/monitors/${id}`);
+export const createMonitor = (data: CreateMonitorInput) => apiPost<Monitor>("/api/monitors/", data);
+export const updateMonitor = (id: string, data: UpdateMonitorInput) =>
+  apiPatch<Monitor>(`/api/monitors/${id}`, data);
+export const deleteMonitor = (id: string) => apiDelete<void>(`/api/monitors/${id}`);
+export const pauseMonitor = (id: string) => apiPatch<Monitor>(`/api/monitors/${id}/pause`, {});

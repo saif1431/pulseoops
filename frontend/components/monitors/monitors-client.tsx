@@ -11,25 +11,39 @@ import { Card, CardContent } from "@/components/ui/card"
 import { StatusDot } from "@/components/ui/status-dot"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { Monitor } from "@/lib/types"
-import { deleteMonitor, pauseMonitor } from "@/lib/api/monitors"
+import { type Monitor } from "@/lib/api/monitors"
 import { Button } from "@/components/ui/button"
 
 interface MonitorsClientProps {
   monitors: Monitor[]
   plan: "FREE" | "PRO" | "BUSINESS"
   planLimits: number
+  deleteAction?: (id: string) => Promise<void>
+  pauseAction?: (id: string) => Promise<Monitor>
+  updateAction?: (id: string, data: { name?: string }) => Promise<Monitor>
+  createAction: (data: {
+    name: string
+    url: string
+    interval_seconds?: number
+    expected_status_code?: number
+    show_on_status_page?: boolean
+  }) => Promise<unknown>
 }
 
-export function MonitorsClient({ monitors: initialMonitors, plan, planLimits }: MonitorsClientProps) {
+export function MonitorsClient({
+  monitors: initialMonitors,
+  plan,
+  planLimits,
+  deleteAction,
+  pauseAction,
+  updateAction,
+  createAction,
+}: MonitorsClientProps) {
   const router = useRouter()
   const [search, setSearch] = React.useState("")
   const [loading, setLoading] = React.useState<string | null>(null)
   const [monitors, setMonitors] = React.useState(initialMonitors)
   const atMonitorLimit = planLimits !== -1 && monitors.length >= planLimits
-
-  // Sync with server data on prop change
-  React.useEffect(() => { setMonitors(initialMonitors) }, [initialMonitors])
 
   const filteredMonitors = monitors.filter(m => 
     m.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -43,7 +57,9 @@ export function MonitorsClient({ monitors: initialMonitors, plan, planLimits }: 
     setMonitors(monitors.filter(m => m.id !== id))
     setLoading(id)
     try {
-      await deleteMonitor(id)
+      if (deleteAction) {
+        await deleteAction(id)
+      }
       toast.success("Monitor deleted successfully.")
       router.refresh()
     } catch (e) {
@@ -56,18 +72,44 @@ export function MonitorsClient({ monitors: initialMonitors, plan, planLimits }: 
   }
 
   const handlePause = async (id: string) => {
-    // Optimistic: toggle status
+    // Optimistic: toggle active state
     const prev = monitors
-    setMonitors(monitors.map(m => m.id === id ? { ...m, status: m.status === 'pending' ? 'up' as const : 'pending' as const } : m))
+    setMonitors(monitors.map(m => m.id === id ? { ...m, is_active: !m.is_active } : m))
     setLoading(id)
     try {
-      await pauseMonitor(id)
+      if (pauseAction) {
+        const updated = await pauseAction(id)
+        setMonitors(monitors.map(m => m.id === id ? updated : m))
+      }
       toast.success("Monitor paused.")
       router.refresh()
     } catch (e) {
       console.error("Failed to pause", e)
       setMonitors(prev) // rollback
       toast.error("Failed to pause monitor. Please try again.")
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  const handleRename = async (id: string, currentName: string) => {
+    const nextName = prompt("Rename monitor", currentName)?.trim()
+    if (!nextName || nextName === currentName) return
+
+    const prev = monitors
+    setMonitors(monitors.map(m => m.id === id ? { ...m, name: nextName } : m))
+    setLoading(id)
+    try {
+      if (updateAction) {
+        const updated = await updateAction(id, { name: nextName })
+        setMonitors(monitors.map(m => m.id === id ? updated : m))
+      }
+      toast.success("Monitor updated.")
+      router.refresh()
+    } catch (e) {
+      console.error("Failed to update", e)
+      setMonitors(prev)
+      toast.error("Failed to update monitor. Please try again.")
     } finally {
       setLoading(null)
     }
@@ -83,7 +125,7 @@ export function MonitorsClient({ monitors: initialMonitors, plan, planLimits }: 
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <AddMonitorModal onSuccess={() => router.refresh()} currentCount={monitors.length} />
+          <AddMonitorModal onSuccess={() => router.refresh()} currentCount={monitors.length} createAction={createAction} />
           {atMonitorLimit && plan === "FREE" && (
             <Button variant="outline" onClick={() => router.push('/pricing')}>
               Upgrade
@@ -103,7 +145,7 @@ export function MonitorsClient({ monitors: initialMonitors, plan, planLimits }: 
           />
         </div>
         <div className="flex gap-2">
-          <select className="h-10 rounded-md border border-line-default bg-bg-surface px-3 py-2 text-sm text-text-primary shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-focus">
+           <select className="h-10 rounded-md border border-line-default bg-bg-surface px-3 py-2 text-sm text-text-primary shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-focus">
             <option value="all">All Status</option>
             <option value="up">Up</option>
             <option value="down">Down</option>
@@ -123,8 +165,8 @@ export function MonitorsClient({ monitors: initialMonitors, plan, planLimits }: 
             <Activity className="h-8 w-8 text-brand-default opacity-80" />
           </div>
           <h3 className="text-xl font-bold text-text-primary mb-2">No monitors found</h3>
-          <p className="text-sm text-text-tertiary mb-8 max-w-sm">Start tracking your website's uptime by adding your first monitor.</p>
-          <AddMonitorModal onSuccess={() => router.refresh()} currentCount={monitors.length} />
+          <p className="text-sm text-text-tertiary mb-8 max-w-sm">Start tracking your website&apos;s uptime by adding your first monitor.</p>
+          <AddMonitorModal onSuccess={() => router.refresh()} currentCount={monitors.length} createAction={createAction} />
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -134,7 +176,7 @@ export function MonitorsClient({ monitors: initialMonitors, plan, planLimits }: 
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex items-start gap-4 overflow-hidden">
                     <div className="mt-1 shrink-0">
-                      <StatusDot status={monitor.status} />
+                      <StatusDot status={monitor.is_active ? monitor.last_status : "pending"} />
                     </div>
                     <div className="min-w-0">
                       <h3 className="font-bold text-text-primary truncate text-lg group-hover:text-brand-default transition-colors">{monitor.name}</h3>
@@ -143,9 +185,17 @@ export function MonitorsClient({ monitors: initialMonitors, plan, planLimits }: 
                   </div>
                   
                   <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button 
-                      onClick={() => handlePause(monitor.id)}
-                      disabled={loading === monitor.id}
+                     <button
+                       onClick={() => handleRename(monitor.id, monitor.name)}
+                       disabled={loading === monitor.id}
+                       className="text-text-tertiary hover:text-text-primary transition-colors shrink-0 p-2 rounded-xl hover:bg-bg-base border border-transparent hover:border-line-default"
+                       title="Rename Monitor"
+                     >
+                       <span className="text-xs font-semibold">Edit</span>
+                     </button>
+                     <button 
+                       onClick={() => handlePause(monitor.id)}
+                       disabled={loading === monitor.id}
                       className="text-text-tertiary hover:text-text-primary transition-colors shrink-0 p-2 rounded-xl hover:bg-bg-base border border-transparent hover:border-line-default"
                       title="Pause Monitor"
                     >
@@ -166,23 +216,27 @@ export function MonitorsClient({ monitors: initialMonitors, plan, planLimits }: 
                   <div>
                     <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-text-tertiary mb-2">
                       <span>Uptime (30d)</span>
-                      <span className="font-mono text-text-primary">{monitor.uptime || "N/A"}</span>
+                       <span className="font-mono text-text-primary">
+                         {monitor.uptime_percentage != null ? `${monitor.uptime_percentage.toFixed(2)}%` : "N/A"}
+                       </span>
                     </div>
                     <div className="h-2 w-full bg-bg-base rounded-full overflow-hidden border border-line-default/30">
                       <div 
                         className={cn(
                           "h-full rounded-full transition-all duration-500",
-                          monitor.status === "up" ? "bg-status-up shadow-[0_0_8px_rgba(34,197,94,0.4)]" : "bg-status-degraded shadow-[0_0_8px_rgba(249,115,22,0.4)]"
-                        )} 
-                        style={{ width: monitor.uptime || "0%" }} 
-                      />
+                           monitor.last_status === "up" ? "bg-status-up shadow-[0_0_8px_rgba(34,197,94,0.4)]" : "bg-status-degraded shadow-[0_0_8px_rgba(249,115,22,0.4)]"
+                         )} 
+                         style={{ width: `${Math.max(0, Math.min(100, monitor.uptime_percentage ?? 0))}%` }}
+                       />
                     </div>
                   </div>
                   
                   <div className="bg-bg-base/50 rounded-2xl p-4 border border-line-default/30">
                     <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-text-tertiary mb-3">
                       <span>Response Time</span>
-                      <span className="font-mono text-text-primary">{monitor.responseTime || "N/A"}</span>
+                       <span className="font-mono text-text-primary">
+                         {monitor.last_response_ms != null ? `${monitor.last_response_ms}ms` : "N/A"}
+                       </span>
                     </div>
                     {/* Placeholder sparkline */}
                     <div className="h-10 w-full flex items-end gap-1.5 px-1">
@@ -195,10 +249,12 @@ export function MonitorsClient({ monitors: initialMonitors, plan, planLimits }: 
 
                 <div className="mt-8 pt-5 border-t border-line-default/30 flex items-center justify-between">
                   <div className="text-[10px] font-bold uppercase tracking-widest text-text-tertiary">
-                    Checked {monitor.lastChecked || "never"}
-                  </div>
-                  <Badge variant="neutral" size="sm" className="font-mono bg-bg-base border-line-default/50 text-text-secondary rounded-lg px-2 py-0.5">1m</Badge>
-                </div>
+                     Checked {monitor.last_checked_at ? new Date(monitor.last_checked_at).toLocaleString() : "never"}
+                   </div>
+                   <Badge variant="neutral" size="sm" className="font-mono bg-bg-base border-line-default/50 text-text-secondary rounded-lg px-2 py-0.5">
+                     {Math.max(1, Math.round(monitor.interval_seconds / 60))}m
+                   </Badge>
+                 </div>
               </CardContent>
             </Card>
           ))}

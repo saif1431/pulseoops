@@ -17,7 +17,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button, buttonVariants } from "@/components/ui/button"
 import { StatusBadge } from "@/components/ui/badge"
 import { StatusDot } from "@/components/ui/status-dot"
-import { Monitor, Incident } from "@/lib/types"
+import { type Monitor } from "@/lib/api/monitors"
+import { Incident } from "@/lib/types"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 
@@ -78,7 +79,7 @@ const generateMockChecks = () => {
 
 export function MonitorDetailClient({ monitor, incidents }: MonitorDetailClientProps) {
   const [timeRange, setTimeRange] = React.useState<"24h" | "7d" | "30d">("24h")
-  const [paused, setPaused] = React.useState(monitor.status === "pending") // mock initial paused state
+  const [paused, setPaused] = React.useState(!monitor.is_active)
   
   const chartData = React.useMemo(() => generateChartData(timeRange === "24h" ? 24 : timeRange === "7d" ? 24 * 7 : 24 * 30), [timeRange])
   const historyBlocks = React.useMemo(() => generateHistoryBlocks(), [])
@@ -95,7 +96,7 @@ export function MonitorDetailClient({ monitor, incidents }: MonitorDetailClientP
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <StatusDot status={paused ? "pending" : monitor.status} />
+            <StatusDot status={paused ? "pending" : monitor.last_status} />
             <h1 className="text-2xl font-bold text-text-primary">{monitor.name}</h1>
           </div>
           <div className="flex items-center gap-2 text-sm text-text-secondary font-mono">
@@ -130,13 +131,17 @@ export function MonitorDetailClient({ monitor, incidents }: MonitorDetailClientP
         <Card>
           <CardContent className="p-4 flex flex-col justify-center">
             <span className="text-xs text-text-secondary mb-1">Uptime (30d)</span>
-            <span className="text-2xl font-bold text-text-primary">{monitor.uptime || "99.95%"}</span>
+            <span className="text-2xl font-bold text-text-primary">
+              {monitor.uptime_percentage != null ? `${monitor.uptime_percentage.toFixed(2)}%` : "99.95%"}
+            </span>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 flex flex-col justify-center">
             <span className="text-xs text-text-secondary mb-1">Avg Response</span>
-            <span className="text-2xl font-bold text-text-primary">{monitor.responseTime || "120ms"}</span>
+            <span className="text-2xl font-bold text-text-primary">
+              {monitor.last_response_ms != null ? `${monitor.last_response_ms}ms` : "120ms"}
+            </span>
           </CardContent>
         </Card>
       </div>

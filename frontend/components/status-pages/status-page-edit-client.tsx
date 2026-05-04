@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Monitor } from "@/lib/types"
+import { type Monitor } from "@/lib/api/monitors"
 import { StatusDot } from "@/components/ui/status-dot"
 import { cn } from "@/lib/utils"
 
@@ -123,7 +123,7 @@ export function StatusPageEditClient({ statusPage, allMonitors }: StatusPageEdit
                     >
                       <div className="flex items-center gap-3">
                         <GripVertical className="h-5 w-5 text-text-tertiary cursor-move hover:text-text-primary" />
-                        <StatusDot status={monitor.status} />
+                        <StatusDot status={monitor.last_status} />
                         <div>
                           <p className="text-sm font-medium text-text-primary">{monitor.name}</p>
                           <p className="text-xs text-text-secondary font-mono">{monitor.url}</p>

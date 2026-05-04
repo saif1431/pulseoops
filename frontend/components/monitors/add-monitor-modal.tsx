@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Loader2, Plus } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,12 +16,21 @@ import {
   ModalTrigger,
 } from "@/components/ui/modal"
 
-import { createMonitor } from "@/lib/api/monitors"
+import { type CreateMonitorInput } from "@/lib/api/monitors"
 import { toast } from "sonner"
 import { usePlan } from "@/lib/use-plan"
 import { UpgradePrompt } from "@/components/billing/upgrade-prompt"
 
-export function AddMonitorModal({ onSuccess, currentCount = 0 }: { onSuccess?: () => void; currentCount?: number }) {
+export function AddMonitorModal({
+  onSuccess,
+  currentCount = 0,
+  createAction,
+}: {
+  onSuccess?: () => void
+  currentCount?: number
+  createAction: (data: CreateMonitorInput) => Promise<unknown>
+}) {
+  const router = useRouter()
   const { isPro, isBusiness, canAddMonitor } = usePlan()
   const canCreate = canAddMonitor(currentCount)
   const [open, setOpen] = React.useState(false)
@@ -29,6 +39,7 @@ export function AddMonitorModal({ onSuccess, currentCount = 0 }: { onSuccess?: (
   const [error, setError] = React.useState("")
   const [loading, setLoading] = React.useState(false)
   const [interval, setIntervalValue] = React.useState("5")
+  const [expectedStatusCode, setExpectedStatusCode] = React.useState("200")
 
   const validateUrl = (value: string) => {
     if (!value) return true
@@ -56,12 +67,20 @@ export function AddMonitorModal({ onSuccess, currentCount = 0 }: { onSuccess?: (
     setLoading(true)
     
     try {
-      await createMonitor({ name, url, status: "pending" })
+      const intervalSeconds = Math.round(Number(interval) * 60)
+      const payload: CreateMonitorInput = {
+        name,
+        url: url.includes("://") ? url : `https://${url}`,
+        interval_seconds: intervalSeconds,
+        expected_status_code: Number(expectedStatusCode) || 200,
+      }
+      await createAction(payload)
       toast.success("Monitor added successfully")
       setOpen(false)
+      router.refresh()
       onSuccess?.()
-    } catch {
-      setError("Failed to create monitor")
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to create monitor")
     } finally {
       setLoading(false)
     }
@@ -129,7 +148,8 @@ export function AddMonitorModal({ onSuccess, currentCount = 0 }: { onSuccess?: (
               <Input 
                 label="Expected Status Code" 
                 placeholder="200" 
-                defaultValue="200"
+                value={expectedStatusCode}
+                onChange={(e) => setExpectedStatusCode(e.target.value)}
               />
             </div>
 

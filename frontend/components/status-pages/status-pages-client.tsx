@@ -6,7 +6,7 @@ import { Globe, Plus, MoreVertical, Layout, Users, ExternalLink } from "lucide-r
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { Monitor } from "@/lib/types"
+import { type Monitor } from "@/lib/api/monitors"
 import {
   Modal,
   ModalContent,

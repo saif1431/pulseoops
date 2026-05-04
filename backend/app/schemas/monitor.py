@@ -1,54 +1,53 @@
-from pydantic import BaseModel, HttpUrl
-from typing import Optional
 from datetime import datetime
-from app.models.monitor import MonitorType, MonitorStatus
+from typing import Optional
+from pydantic import BaseModel, field_validator
+from app.models.monitor import MonitorStatus
+
+ALLOWED_INTERVALS = [30, 60, 120, 300, 600, 1800, 3600]
 
 
 class MonitorCreate(BaseModel):
     name: str
     url: str
-    monitor_type: MonitorType = MonitorType.HTTP
-    interval_seconds: int = 60
-    timeout_seconds: int = 10
-    expected_status_code: Optional[int] = None
-    keyword: Optional[str] = None
+    interval_seconds: int = 300
+    expected_status_code: int = 200
+    show_on_status_page: bool = True
+
+    @field_validator("interval_seconds")
+    @classmethod
+    def valid_interval(cls, v: int) -> int:
+        if v not in ALLOWED_INTERVALS:
+            raise ValueError(f"Interval must be one of {ALLOWED_INTERVALS}")
+        return v
+
+    @field_validator("url")
+    @classmethod
+    def valid_url(cls, v: str) -> str:
+        if not v.startswith(("http://", "https://")):
+            raise ValueError("URL must start with http:// or https://")
+        return v
 
 
 class MonitorUpdate(BaseModel):
     name: Optional[str] = None
     url: Optional[str] = None
     interval_seconds: Optional[int] = None
-    timeout_seconds: Optional[int] = None
     expected_status_code: Optional[int] = None
-    keyword: Optional[str] = None
-    is_active: Optional[bool] = None
+    show_on_status_page: Optional[bool] = None
 
 
-class MonitorOut(BaseModel):
+class MonitorResponse(BaseModel):
     id: str
-    user_id: str
     name: str
     url: str
-    monitor_type: MonitorType
     interval_seconds: int
-    timeout_seconds: int
-    status: MonitorStatus
+    expected_status_code: int
+    last_status: MonitorStatus
+    last_response_ms: Optional[int]
+    last_checked_at: Optional[datetime]
     is_active: bool
-    expected_status_code: Optional[int] = None
-    keyword: Optional[str] = None
+    show_on_status_page: bool
     created_at: datetime
-    updated_at: datetime
-
-    model_config = {"from_attributes": True}
-
-
-class CheckResultOut(BaseModel):
-    id: str
-    monitor_id: str
-    checked_at: datetime
-    is_up: bool
-    response_time_ms: Optional[float] = None
-    status_code: Optional[int] = None
-    error_message: Optional[str] = None
+    uptime_percentage: Optional[float] = None
 
     model_config = {"from_attributes": True}
