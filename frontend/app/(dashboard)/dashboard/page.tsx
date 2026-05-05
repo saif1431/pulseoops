@@ -52,7 +52,12 @@ export default async function DashboardHomePage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-text-primary">Overview</h1>
-          <p className="text-sm text-text-secondary">A summary of your monitoring infrastructure.</p>
+          <p className="text-sm text-text-secondary">
+            A summary of your monitoring infrastructure.{" "}
+            <span className="text-text-tertiary">
+              {monitors.length} monitors • {activeIncidents} active incidents
+            </span>
+          </p>
         </div>
         <AddMonitorModal currentCount={monitors.length} createAction={createMonitorAction} />
       </div>

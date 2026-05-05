@@ -23,6 +23,9 @@ class User(Base):
     monitors: Mapped[list["Monitor"]] = relationship(
         "Monitor", back_populates="user", lazy="selectin"
     )
+    incidents: Mapped[list["Incident"]] = relationship(
+        "Incident", back_populates="user", lazy="selectin"
+    )
     status_pages: Mapped[list["StatusPage"]] = relationship(
         "StatusPage", back_populates="user", lazy="selectin"
     )

@@ -45,6 +45,20 @@ export function MonitorsClient({
   const [monitors, setMonitors] = React.useState(initialMonitors)
   const atMonitorLimit = planLimits !== -1 && monitors.length >= planLimits
 
+  React.useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setMonitors(initialMonitors)
+    }, 0)
+    return () => window.clearTimeout(timeoutId)
+  }, [initialMonitors])
+
+  React.useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      router.refresh()
+    }, 60000)
+    return () => window.clearInterval(intervalId)
+  }, [router])
+
   const filteredMonitors = monitors.filter(m => 
     m.name.toLowerCase().includes(search.toLowerCase()) || 
     m.url.toLowerCase().includes(search.toLowerCase())
@@ -174,10 +188,10 @@ export function MonitorsClient({
             <Card key={monitor.id} className="flex flex-col rounded-[24px] border-line-default/50 bg-white hover:border-brand-default/40 transition-all hover:-translate-y-1 hover:shadow-lg group">
               <CardContent className="p-6 flex-1 flex flex-col">
                 <div className="flex justify-between items-start mb-6">
-                  <div className="flex items-start gap-4 overflow-hidden">
-                    <div className="mt-1 shrink-0">
-                      <StatusDot status={monitor.is_active ? monitor.last_status : "pending"} />
-                    </div>
+                    <div className="flex items-start gap-4 overflow-hidden">
+                      <div className="mt-1 shrink-0">
+                       <StatusDot status={monitor.last_status} />
+                      </div>
                     <div className="min-w-0">
                       <h3 className="font-bold text-text-primary truncate text-lg group-hover:text-brand-default transition-colors">{monitor.name}</h3>
                       <p className="text-[11px] text-text-tertiary truncate mt-1 font-mono">{monitor.url}</p>
